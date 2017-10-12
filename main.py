@@ -44,7 +44,14 @@ def register_employee(sdb):
     if result == False:
         return -1
 
-    return employee_id
+    last_added_employee = sdb.get_employees( last_name=last_name, 
+                                             first_name=first_name, 
+                                             middle_name=middle_name)
+    if len(last_added_employee) <= 0:
+        print("Error: No employees found ")
+        return -1
+
+    return last_added_employee[0].id
 
 def choose_department(sdb):
     dept_list = sdb.get_departments()
