@@ -3,6 +3,9 @@
 from database.database import SjcmpcDatabase as SDB
 from database.models import *
 from mfc_reader import MfcReader
+from core import SJCMPCCore, SJCMPCEmployee
+
+core = SJCMPCCore()
 
 def register_employee(sdb):
     # Register the Employee first
@@ -30,31 +33,23 @@ def register_employee(sdb):
         print("Failed to choose a department")
         return -1
 
-    result = sdb.add_employee(employee_id=employee_id,
-                              last_name=last_name,
-                              first_name=first_name,
-                              dept_id=dept_id,
-                              sex=sex,
-                              birth_date=birth_date,
-                              location=location,
-                              hire_date=hire_date,
-                              middle_name=middle_name,
-                              tel_no=tel_no,
-                              mobile_no=mobile_no)
-    if result == False:
-        return -1
+    employee = SJCMPCEmployee()
+    employee.id          = employee_id
+    employee.last_name   = last_name
+    employee.first_name  = first_name
+    employee.dept_id     = dept_id
+    employee.sex         = sex
+    employee.birth_date  = birth_date
+    employee.location    = location
+    employee.hire_date   = hire_date
+    employee.middle_name = middle_name
+    employee.tel_no      = tel_no
+    employee.mobile_no   = mobile_no
 
-    last_added_employee = sdb.get_employees( last_name=last_name, 
-                                             first_name=first_name, 
-                                             middle_name=middle_name)
-    if len(last_added_employee) <= 0:
-        print("Error: No employees found ")
-        return -1
-
-    return last_added_employee[0].id
+    return core.register_employee(employee)
 
 def choose_department(sdb):
-    dept_list = sdb.get_departments()
+    dept_list = core.list_departments()
     if len(dept_list) <= 0:
         print("No departments found. Please register departments first. ")
         return -1
@@ -78,7 +73,7 @@ def choose_department(sdb):
     return dept_list[dept_list_idx].id
 
 def choose_job(sdb):
-    job_list = sdb.get_jobs()
+    job_list = core.list_jobs()
     if len(job_list) <= 0:
         print("No jobs found. Please register jobs first. ")
         return -1
@@ -102,7 +97,7 @@ def choose_job(sdb):
     return job_list[job_list_idx].id
 
 def choose_employee(sdb):
-    employee_list = sdb.get_employees()
+    employee_list = core.list_employees()
     if len(employee_list) <= 0:
         print("No employees found. Please register employees first. ")
         return -1
@@ -132,9 +127,7 @@ def register_badge(sdb, uid, employee_id):
     if pay_type_str == "PR":
         pay_type = PayTypes.PIECE_RATE
 
-    return sdb.add_badge(serial_no=uid, 
-                         employee_id=employee_id,
-                         pay_type=pay_type)
+    return core.register_badhe(uid, employee_id, pay_type)
 
 ###  Text-based User Interface  ###
 def view_timesheet():
@@ -142,7 +135,7 @@ def view_timesheet():
     print("Timesheet")
     sdb = SDB()
 
-    record_list = sdb.get_records()
+    record_list = core.list_records()
     count = 1
     print("----------------------------------------------------------------------------------- ---  --  -")
     for record in record_list:
@@ -165,7 +158,7 @@ def view_departments():
 
     sdb = SDB()
 
-    dept_list = sdb.get_departments()
+    dept_list = core.list_departments()
     count = 1
     for dept in dept_list:
         print("({}) {}".format(count, dept.dept_name))
@@ -187,7 +180,7 @@ def view_jobs():
 
     sdb = SDB()
 
-    job_list = sdb.get_jobs()
+    job_list = core.list_jobs()
     count = 1
     for job in job_list:
         print("({}) {}".format(count, job.job_name))
@@ -206,7 +199,7 @@ def view_employees():
 
     sdb = SDB()
 
-    employee_list = sdb.get_employees()
+    employee_list = core.list_employees()
     count = 1
     for employee in employee_list:
         print("({}) {}, {} {}".format(count, employee.last_name, employee.first_name, employee.middle_name))
@@ -232,7 +225,7 @@ def add_new_departments():
         dept_name = input("Enter new dept name: ")
         desc = input("Enter dept description: ")
 
-        result = sdb.add_department(dept_name, desc)
+        result = core.add_new_department(dept_name, desc)
         if result == False:
             choice = input("Add Department Failed. Try again? [Y/N] ")
             if choice == "Y":
@@ -264,7 +257,7 @@ def add_new_jobs():
             print("Failed to choose a department")
             return
 
-        result = sdb.add_job(job_name, dept_id, desc)
+        result = core.add_new_job(job_name, dept_id, desc)
         if result == False:
             choice = input("Add Job Failed. Try again? [Y/N] ")
             if choice == "Y":
@@ -289,7 +282,7 @@ def remove_jobs():
         print("--------------------")
         job_name = input("Enter job name: ")
 
-        job_matches = sdb.get_jobs(job_name=job_name)
+        job_matches = core.list_jobs_by_name(job_name)
         if len(job_matches) <= 0:
             print("Job name does not exist: {}".format(job_name))
             choice = input("Remove Job Failed. Try again? [Y/N] ")
@@ -324,7 +317,7 @@ def remove_departments():
         print("---------------------------")
         dept_name = input("Enter dept name: ")
 
-        dept_matches = sdb.get_departments(dept_name=dept_name)
+        dept_matches = core.list_departments_by_name(dept_name)
         if len(dept_matches) <= 0:
             print("Dept name does not exist: {}".format(dept_name))
             choice = input("Remove Dept Failed. Try again? [Y/N] ")
@@ -362,7 +355,7 @@ def card_deactivation():
         mfcrd = MfcReader()
         uid = mfcrd.read_card()
 
-        registered_badges = sdb.get_badges()
+        registered_badges = core.list_badges()
         target_badge = None
         for badge in registered_badges:
             if badge.serial_no == uid:
@@ -404,7 +397,7 @@ def card_activation():
         mfcrd = MfcReader()
         uid = mfcrd.read_card()
 
-        registered_badges = sdb.get_badges()
+        registered_badges = core.list_badges()
         for badge in registered_badges:
             if badge.serial_no == uid:
                 print("Error: Card already activated")
@@ -504,7 +497,7 @@ def normal_mode():
         sdb = SDB()
 
         # Check if the card is valid
-        registered_badges = sdb.get_badges()
+        registered_badges = core.list_badges()
         target_badge = None
         for badge in registered_badges:
             if badge.serial_no == uid:
@@ -519,9 +512,7 @@ def normal_mode():
                 break
 
         # Check whether an open record still exists for this badge
-        matches = sdb.get_records(badge_id=target_badge.id,
-                                   time_started_blank=True, 
-                                   time_finished_blank=True)
+        matches = core.list_records_by_badge(target_badge.id, True, True)
         if (len(matches) > 0):
             record = matches[0]
             print("Timing in for open record")
@@ -551,9 +542,7 @@ def normal_mode():
             else:
                 break
 
-        matches = sdb.get_records(badge_id=target_badge.id,
-                                   time_started_blank=False, 
-                                   time_finished_blank=True)
+        matches = core.list_records_by_badge(target_badge.id, False, True)
         if (len(matches) > 0):
             record = matches[0]
             print("Timing out for open record")
